@@ -1,0 +1,304 @@
+#include <stdio.h> // Inclure la bibliothèque standard d'entrée/sortie
+#include <stdlib.h> // Inclure la bibliothèque standard pour les fonctions générales
+#include <time.h> // Inclure la bibliothèque pour manipuler le temps et les dates
+#include <string.h> // Inclure la bibliothèque pour manipuler les chaînes de caractères
+
+#define NUM_PLAYERS 2 // Définir le nombre de joueurs à 2
+#define START_MONEY 400 // Définir l'argent de départ à 400
+#define BOARD_SIZE 100 // Définir la taille du plateau de jeu à 100 cases
+#define DIE_SIDES 6 // Définir le nombre de faces du dé à 6
+
+// Définir le coût et les effets pour diverses cases :
+#define DOOR_COST 200 // Définir le coût de la porte à 200
+#define SQUARE_30_COST 100 // Définir le coût de la case 30 à 100
+#define SQUARE_10_RECEIVE 100 // Définir la réception pour la case 10 à 100
+#define SQUARE_20_BACKWARD 8 // Définir le recul pour la case 20 à 8 cases
+
+// Définir les positions des échelles :
+#define LADDER_1_BOTTOM 8 // Définir le bas de l'échelle 1 à la case 8
+#define LADDER_1_TOP 31 // Définir le haut de l'échelle 1 à la case 31
+#define LADDER_2_BOTTOM 15 // Définir le bas de l'échelle 2 à la case 15
+#define LADDER_2_TOP 97 // Définir le haut de l'échelle 2 à la case 97
+#define LADDER_3_BOTTOM 42 // Définir le bas de l'échelle 3 à la case 42
+#define LADDER_3_TOP 81 // Définir le haut de l'échelle 3 à la case 81
+#define LADDER_4_BOTTOM 66 // Définir le bas de l'échelle 4 à la case 66
+#define LADDER_4_TOP 87 // Définir le haut de l'échelle 4 à la case 87
+
+typedef struct {
+    char name[50]; // Nom du joueur
+    int position;  // Position du joueur sur le plateau
+    int money;     // Argent du joueur
+    int isActive;  // Indicateur si le joueur est actif
+} Player;
+
+int rollDie() {
+    return rand() % DIE_SIDES + 1; // Lancer le dé et retourner le résultat
+}
+
+void handleSpecialRoll(Player *player, int roll) {
+    if (roll == 6) {
+        player->position += 6; // Si le joueur obtient un 6, avancer de 6 cases
+        printf("%s avance de 6 cases \n", player->name);
+        return; // Retourner immédiatement, fin de la fonction
+    } else if (roll == 3) {
+        player->position += 6; // Si le joueur obtient un 3, avancer de 6 cases
+        printf("%s avance de 6 cases !\n", player->name);
+    } else if (roll == 2) {
+        player->position -= 5; // Si le joueur obtient un 2, reculer de 5 cases
+        if (player->position < 0) {
+            player->position = 0; // S'assurer que la position ne devient pas négative
+        }
+        printf("%s recule de 5 cases !\n", player->name);
+    }else if (roll == 5 ){
+    	player->position += 5; // Si le joueur obtient un 5, avancer de 5 cases
+        printf("%s ravance de 5 cases !\n", player->name);
+	}
+	else if (roll == 4 ){
+    	player->position += 4; // Si le joueur obtient un 4, avancer de 4 cases
+        printf("%s avance de 4 cases !\n", player->name);
+	}
+		else if (roll == 1 ){
+    	player->position += 1; // Si le joueur obtient un 1, avancer de 1 case
+        printf("%s avance de 1 case !\n", player->name);
+	}
+	
+}
+
+void updatePosition(Player *player, int roll) {
+    handleSpecialRoll(player, roll); // Gérer un lancer spécial
+
+    // Vérifier les cases spéciales et mettre à jour en conséquence :
+    if (player->position == 30) {
+        if (player->money >= SQUARE_30_COST) {
+            player->money -= SQUARE_30_COST;
+        } else {
+            player->isActive = 0; // Désactiver le joueur s'il n'a pas assez d'argent
+        }
+    } else if (player->position == 10) {
+        player->money += SQUARE_10_RECEIVE;
+        printf("%s a recu $%d parce que le joueur a arrive sur la case 10 !\n", player->name, SQUARE_10_RECEIVE);
+    } else if (player->position == 20) {
+        player->position -= SQUARE_20_BACKWARD;
+        if (player->position < 0) {
+            player->position = 0;
+        }
+        printf("%s recule de %d cases parce que le joueur a arrive sur la case 20 !\n", player->name, SQUARE_20_BACKWARD);
+    }
+
+    // Vérifier les portes et mettre à jour l'argent :
+    if (player->position == 7 || player->position == 22 || player->position == 48 ||
+        player->position == 62 || player->position == 89 || player->position == 95) {
+        if (player->money >= DOOR_COST) {
+            player->money -= DOOR_COST;
+            printf("%s a paye $%d parce que le joueur a arrive sur une case de porte !\n", player->name, DOOR_COST);
+        } else {
+            player->isActive = 0; // Désactiver le joueur s'il n'a pas assez d'argent
+        }
+    }
+
+    // Vérifier les positions de serpents et déplacer le joueur en conséquence :
+    if (player->position == 24) {
+        player->position = 1;
+        printf("%s est arrive sur une case serpent et se deplace a la case 1 !\n", player->name);
+    } else if (player->position == 99) {
+        player->position = 6;
+        printf("%s est arrive sur une case serpent et se deplace a la case 6 !\n", player->name);
+    } else if (player->position == 55) {
+        player->position = 13;
+        printf("%s est arrive sur une case serpent et se deplace a la case 13 !\n", player->name);
+    } else if (player->position == 71) {
+        player->position = 29;
+        printf("%s est arrive sur une case serpent et se deplace a la case 29 !\n", player->name);
+    } else if (player->position == 88) {
+        player->position = 67;
+        printf("%s est arrive sur une case serpent et se deplace a la case 67 !\n", player->name);
+    }
+
+    // Vérifier les positions d'échelles et déplacer le joueur en conséquence :
+    if (player->position == LADDER_1_BOTTOM) {
+        player->position = LADDER_1_TOP;
+        printf("%s a grimpe une echelle et se deplace a la case %d !\n", player->name, LADDER_1_TOP);
+    } else if (player->position == LADDER_2_BOTTOM) {
+        player->position = LADDER_2_TOP;
+        printf("%s a grimpe une echelle et se deplace a la case %d !\n", player->name, LADDER_2_TOP);
+    } else if (player->position == LADDER_3_BOTTOM) {
+        player->position = LADDER_3_TOP;
+        printf("%s a grimpe une echelle et se deplace a la case %d !\n", player->name, LADDER_3_TOP);
+    } else if (player->position == LADDER_4_BOTTOM) {
+        player->position = LADDER_4_TOP;
+        printf("%s a grimpe une echelle et se deplace a la case %d !\n", player->name, LADDER_4_TOP);
+    }
+
+    // Assurer que la position du joueur ne dépasse pas la taille du plateau :
+    if (player->position > BOARD_SIZE) {
+        player->position = BOARD_SIZE;
+    }
+}
+
+
+int checkWinningCondition(Player *players, int currentPlayer, FILE *resultFile) {
+    // Vérifier si un joueur a atteint la case 100 ou si son argent est épuisé :
+    if (players[currentPlayer].position == BOARD_SIZE) {
+        printf("%s remporte la partie !\n", players[currentPlayer].name);
+        fprintf(resultFile, "%s remporte la partie !\n", players[currentPlayer].name);
+        return 1; // La partie est gagnée
+    } else if (players[currentPlayer].money <= 0) {
+        printf("%s n'a plus d'argent et est elimine !\n", players[currentPlayer].name);
+        fprintf(resultFile, "%s n'a plus d'argent et est elimine !\n", players[currentPlayer].name);
+        players[currentPlayer].isActive = 0;
+    }
+
+    // Vérifier si un seul joueur est encore actif :
+    int activePlayers = 0;
+    int lastActivePlayer = -1;
+    int i;
+    for (i = 0; i < NUM_PLAYERS; i++) {
+        if (players[i].isActive) {
+            activePlayers++;
+            lastActivePlayer = i;
+        }
+    }
+
+    if (activePlayers == 1) {
+        printf("%s est le dernier joueur en lice et remporte la partie !\n", players[lastActivePlayer].name);
+        fprintf(resultFile, "%s est le dernier joueur en lice et remporte la partie !\n", players[lastActivePlayer].name);
+        return 1; // La partie est gagnée
+    }
+
+    return 0; // La partie continue
+}
+
+int main(){
+	srand(time(NULL)); // Initialiser le générateur de nombres aléatoires avec l'heure actuelle
+int i; // Déclarer une variable pour les boucles
+Player players[NUM_PLAYERS]; // Créer un tableau pour stocker les joueurs
+
+
+
+
+printf("                                                  ||       Bienvenue au Jeu de Serpents et Echelles       ||                 \n");
+    printf("\n");
+    
+    printf("                                                          || Plongez dans le monde du jeu ||                            \n");
+    printf("\n");
+    printf("                                                          ||     Pret pour l'aventure!    ||\n");
+    printf("\n");
+    
+     printf("                       _____\n");
+    printf("                    .-'`     '.\n");
+    printf("                 __/  __       \\\n");
+    printf("                /  \\ /  \\       |    ___\n");
+    printf("               | /\\| /\\|      | .-'  /^\\/^\\\n");
+    printf("               | \\(/| \\(/|      |/     |) |)|\n");
+    printf("              .-\\__/ \\__/       |      \\_/\\_/__..._\n");
+    printf("      _...---'-.                /   _              '.\n");
+    printf("     /,      ,             \\   '|  `\\                \\\n");
+    printf("    | ))     ))           /`|   \\    `.       /)  /) |\n");
+    printf("    | `      `          .'       |     `-._         /\n");
+    printf("    \\                 .'         |     ,_  `--....-'\n");
+    printf("     .           __.' ,         |     / /''''`\n");
+    printf("       `'-.____.-' /  /,         |    / /\n");
+    printf("           `. -.- .'  \\        /   / |\n");
+    printf("             `-.__.'|    \\      |   |  |-.   \n");
+    printf("                _.._|     |     /   |  |  `'.\n");
+    printf("          .-''``    |     |     |   /  |     `-. \n");
+    printf("       .'`         /      /     /  |   |        '.\n");
+    printf("     /`           /      /     |   /   |\\         \\\n");
+    printf("    /            |      |      |   |   / .         |\n");
+    printf("   ||            |      /      |   /     '.        |\n");
+    printf("   |\\            \\      |      /   |       '.      /\n");
+    printf("   \\ `.           '.    /      |    \\        '---'/\n");
+    printf("    \\  '.           `-./        \\    '.          /\n");
+    printf("     '.  `'.            `-._     '.__  '-._____.'--'''''--.\n");
+    printf("       '-.  `'--._          `.__     ';----              \\\n");
+    printf("          `-.     `-.          `'-.                     /\n");
+    printf("             `'-..,_ `-.         `'-.                 /\n");
+    printf("                    '.  '.           '.             .'\n");
+
+
+	for (i = 0; i < NUM_PLAYERS; i++) {
+	    printf("Entrez le nom du Joueur %d : ", i + 1);
+	    scanf("%s", players[i].name);
+	    getchar(); // Nettoyer le tampon d'entrée
+	    players[i].position = 0; // Initialiser la position du joueur
+	    players[i].money = START_MONEY; // Initialiser l'argent du joueur
+	    players[i].isActive = 1; // Activer le joueur
+	}
+
+	int board[BOARD_SIZE]; // Créer un tableau pour le plateau de jeu
+	for (i = 0; i < BOARD_SIZE; i++) {
+	    board[i] = 0; // Initialiser le plateau de jeu
+	}
+
+	// Ouvrir un fichier texte pour enregistrer les résultats du jeu
+	FILE *resultFile = fopen("game_results.txt", "a"); // Mode d'ajout
+	if (resultFile == NULL) {
+	    perror("Erreur lors de l'ouverture du fichier");
+	    return 1; // Retourner 1 en cas d'erreur
+	}
+
+	// Obtenir la date et l'heure actuelles
+	time_t currentTime;
+	struct tm *localTime;
+	char dateStr[100];
+
+	time(&currentTime); // Obtenir le temps actuel
+	localTime = localtime(&currentTime); // Convertir en heure locale
+
+	strftime(dateStr, sizeof(dateStr), "%Y-%m-%d %H:%M:%S", localTime); // Formater la date et l'heure
+
+	// Écrire la date et l'heure dans le fichier
+	fprintf(resultFile, "Le jeu a commencé à : %s\n", dateStr);
+
+	printf("=====================================\n");
+	printf("       Jeu de Serpents et Echelles       \n");
+	printf("=====================================\n");
+
+	// Déterminer qui commence le jeu
+	printf("Determination du premier joueur...\n");
+	int highestRoll = 0; // Le plus haut lancer
+	int firstPlayer = 0; // Le premier joueur
+	for (i = 0; i < NUM_PLAYERS; i++) {
+	    printf("%s, appuyez sur Entree pour lancer le de...\n", players[i].name);
+	    getchar();
+
+	    int roll = rollDie();
+	    printf("%s a lance un %d\n", players[i].name, roll);
+
+	    if (roll > highestRoll) {
+	        highestRoll = roll;
+	        firstPlayer = i;
+	    }
+	}
+
+	printf("%s commence en premier !\n", players[firstPlayer].name);
+
+	int currentPlayer = firstPlayer;
+	while (1) {
+	    if (players[currentPlayer].isActive) {
+	        printf("Tour de %s. Appuyez sur Entree pour lancer le de...\n", players[currentPlayer].name);
+	        getchar();
+
+	        int roll = rollDie();
+	        printf("%s a lance un %d\n", players[currentPlayer].name, roll);
+
+	        updatePosition(&players[currentPlayer], roll);
+
+	        printf("%s est maintenant sur la case %d\n", players[currentPlayer].name, players[currentPlayer].position);
+
+	        if (checkWinningCondition(players, currentPlayer, resultFile)) {
+	            fprintf(resultFile, "------------------------------------\n");
+	            break; // Fin de la partie
+	        }
+	    }
+
+	    currentPlayer = (currentPlayer + 1) % NUM_PLAYERS; // Passer au joueur suivant
+	}
+
+	// Fermer le fichier texte
+	fclose(resultFile);
+
+	return 0; // Fin du programme
+
+
+}
